@@ -51,6 +51,10 @@ Key information includes:
 
 Several additional properties use formulas, relations, and rollups to derive information from the connected databases rather than requiring duplicate manual entry.
 
+<p align="center">
+  <img src="images/book-properties.png" width="500" alt="Book Properties">
+</p>
+
 ### ✍️ Authors
 
 Authors are maintained as individual records and related to Books.

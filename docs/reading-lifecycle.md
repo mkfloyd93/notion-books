@@ -2,54 +2,109 @@
 
 The reading workflow uses four Notion automations that respond to changes I make on the Book record. Rather than manually creating Reading Sessions or Reading Logs, I update the book's **Status** and **Progress**, and those changes trigger the appropriate automation.
 
-### Starting a Reading Session
+<table>
+<tr>
+<td width="70%" valign="top">
 
-When I change a Book's Status to `Reading`, the start automation initializes everything needed to track that read.
+<h3>Starting a Reading Session</h3>
 
-It creates a new Reading Session and connects it to the Book. That session is also stored as the Book's `Active Reading Session`, which gives later automations a way to identify where new activity should be recorded.
+<p>When I change a Book's Status to <code>Reading</code>, the start automation initializes everything needed to track that read.</p>
 
-The automation then creates the first Reading Log with a `Started` event at 0% progress. That log becomes the Book's `Last Log`, and the Book's Progress is set to 0%.
+<p>It creates a new Reading Session and connects it to the Book. That session is also stored as the Book's <code>Active Reading Session</code>, which gives later automations a way to identify where new activity should be recorded.</p>
 
-At this point, the system has established both pieces of temporary state it needs while I read:
+<p>The automation then creates the first Reading Log with a <code>Started</code> event at 0% progress. That log becomes the Book's <code>Last Log</code>, and the Book's Progress is set to 0%.</p>
 
-- `Active Reading Session` identifies the current read-through.
-- `Last Log` identifies the most recently recorded progress point.
+<p>At this point, the system has established both pieces of temporary state it needs while I read:</p>
 
-### Recording Progress
+<ul>
+<li><code>Active Reading Session</code> identifies the current read-through.</li>
+<li><code>Last Log</code> identifies the most recently recorded progress point.</li>
+</ul>
 
-While I am reading, I manually update the Book's Progress percentage.
+</td>
+<td width="30%" valign="top" align="center">
+<a href="images/automations-started.png">
+<img src="images/automations-started.png" width="250" alt="Notion automation for starting a reading session">
+</a>
+</td>
+</tr>
+</table>
 
-Each change triggers the progress automation. The automation uses `Last Log` to retrieve the previous percentage and compares it with the new Progress value to determine how much of the book I have read since the previous update.
+<table>
+<tr>
+<td width="70%" valign="top">
 
-For an audiobook, that percentage difference is multiplied by the Book's total runtime:
+<h3>Recording Progress</h3>
 
-```text
-(Current Progress - Previous Progress) × Total Runtime
-                      =
-             Estimated Minutes Listened
-```
+<p>While I am reading, I manually update the Book's Progress percentage.</p>
 
-The automation creates a new Reading Log containing the current percentage, calculated minutes, date, Book, and `Active Reading Session`.
+<p>Each change triggers the progress automation. The automation uses <code>Last Log</code> to retrieve the previous percentage and compares it with the new Progress value to determine how much of the book I have read since the previous update.</p>
 
-After the log is created, it replaces the previous `Last Log`. This means the next Progress update can use the newly recorded percentage as its starting point.
+<p>For an audiobook, that percentage difference is multiplied by the Book's total runtime:</p>
 
-The process repeats each time I update Progress.
+<pre>(Current Progress - Previous Progress)
+            × Total Runtime
+                    =
+     Estimated Minutes Listened</pre>
 
-### Completing a Reading Session
+<p>The automation creates a new Reading Log containing the current percentage, calculated minutes, date, Book, and <code>Active Reading Session</code>.</p>
 
-When I finish a book, I change its Status to `Read`.
+<p>After the log is created, it replaces the previous <code>Last Log</code>. This means the next Progress update can use the newly recorded percentage as its starting point.</p>
 
-Because I may not have manually updated Progress to exactly 100% before finishing, the completion automation uses the last recorded percentage to calculate the remaining portion of the audiobook.
+<p>The process repeats each time I update Progress.</p>
 
-It creates a final `Finished` Reading Log at 100% and records the remaining listening time. The Book's Progress is then set to 100%.
+</td>
+<td width="30%" valign="top" align="center">
+<a href="images/automation-update-percentage.png">
+<img src="images/automation-update-percentage.png" width="250" alt="Notion automation for recording reading progress">
+</a>
+</td>
+</tr>
+</table>
 
-Finally, `Active Reading Session` and `Last Log` are cleared. These properties are no longer needed because there is no active read, but the Reading Session and all of its Reading Logs remain as permanent historical records.
+<table>
+<tr>
+<td width="70%" valign="top">
 
-### Ending a Book Without Finishing
+<h3>Completing a Reading Session</h3>
 
-Changing Status to `Did Not Finish` triggers a separate automation.
+<p>When I finish a book, I change its Status to <code>Read</code>.</p>
 
-A `Did Not Finish` Reading Log is created and connected to the Book's current Reading Session. The automation then clears `Active Reading Session` and `Last Log`, ending the active workflow while preserving the Reading Session and all activity recorded before the book was abandoned.
+<p>Because I may not have manually updated Progress to exactly 100% before finishing, the completion automation uses the last recorded percentage to calculate the remaining portion of the audiobook.</p>
+
+<p>It creates a final <code>Finished</code> Reading Log at 100% and records the remaining listening time. The Book's Progress is then set to 100%.</p>
+
+<p>Finally, <code>Active Reading Session</code> and <code>Last Log</code> are cleared. These properties are no longer needed because there is no active read, but the Reading Session and all of its Reading Logs remain as permanent historical records.</p>
+
+</td>
+<td width="30%" valign="top" align="center">
+<a href="images/automation-completed.png">
+<img src="images/automation-completed.png" width="250" alt="Notion automation for completing a reading session">
+</a>
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td width="70%" valign="top">
+
+<h3>Ending a Book Without Finishing</h3>
+
+<p>Changing Status to <code>Did Not Finish</code> triggers a separate automation.</p>
+
+<p>A <code>Did Not Finish</code> Reading Log is created and connected to the Book's current Reading Session.</p>
+
+<p>The automation then clears <code>Active Reading Session</code> and <code>Last Log</code>, ending the active workflow while preserving the Reading Session and all activity recorded before the book was abandoned.</p>
+
+</td>
+<td width="30%" valign="top" align="center">
+<a href="images/automation-dnf.png">
+<img src="images/automation-dnf.png" width="250" alt="Notion automation for ending a book without finishing">
+</a>
+</td>
+</tr>
+</table>
 
 ### The Complete Flow
 

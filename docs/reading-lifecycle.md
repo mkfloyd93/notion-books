@@ -44,7 +44,7 @@ The reading workflow uses four Notion automations that respond to changes I make
 
 <pre>(Current Progress - Previous Progress)
             × Total Runtime
-                    =
+                   =
      Estimated Minutes Listened</pre>
 
 <p>The automation creates a new Reading Log containing the current percentage, calculated minutes, date, Book, and <code>Active Reading Session</code>.</p>
@@ -62,84 +62,29 @@ The reading workflow uses four Notion automations that respond to changes I make
 </tr>
 </table>
 
-<table>
-<tr>
-<td width="70%" valign="top">
+### Workflow in Action
 
-<h3>Completing a Reading Session</h3>
-
-<p>When I finish a book, I change its Status to <code>Read</code>.</p>
-
-<p>Because I may not have manually updated Progress to exactly 100% before finishing, the completion automation uses the last recorded percentage to calculate the remaining portion of the audiobook.</p>
-
-<p>It creates a final <code>Finished</code> Reading Log at 100% and records the remaining listening time. The Book's Progress is then set to 100%.</p>
-
-<p>Finally, <code>Active Reading Session</code> and <code>Last Log</code> are cleared. These properties are no longer needed because there is no active read, but the Reading Session and all of its Reading Logs remain as permanent historical records.</p>
-
-</td>
-<td width="30%" valign="top" align="center">
-<a href="images/automation-completed.png">
-<img src="images/automation-completed.png" width="250" alt="Notion automation for completing a reading session">
-</a>
-</td>
-</tr>
-</table>
+These recordings demonstrate the two manual interactions that drive the automated reading workflow: changing a book's status and updating its reading progress.
 
 <table>
 <tr>
-<td width="70%" valign="top">
+<td width="50%" align="center" valign="top">
 
-<h3>Ending a Book Without Finishing</h3>
+**Starting a Reading Session**
 
-<p>Changing Status to <code>Did Not Finish</code> triggers a separate automation.</p>
-
-<p>A <code>Did Not Finish</code> Reading Log is created and connected to the Book's current Reading Session.</p>
-
-<p>The automation then clears <code>Active Reading Session</code> and <code>Last Log</code>, ending the active workflow while preserving the Reading Session and all activity recorded before the book was abandoned.</p>
-
-</td>
-<td width="30%" valign="top" align="center">
-<a href="images/automation-dnf.png">
-<img src="images/automation-dnf.png" width="250" alt="Notion automation for ending a book without finishing">
+<a href="images/reading-status-workflow.gif">
+<img src="images/reading-status-workflow.gif" width="240" alt="Demonstration of changing a book's status to Reading in Notion">
 </a>
+
+Changing the book's status to `Reading` starts the automated tracking workflow.
+
 </td>
-</tr>
-</table>
+<td width="50%" align="center" valign="top">
 
-### The Complete Flow
+**Updating Reading Progress**
 
-The four automations work together as a lifecycle:
+<a href="images/listening-progress-tracking.gif">
+<img src="images/listening-progress-tracking.gif" width="240" alt="Demonstration of updating audiobook reading progress in Notion">
+</a>
 
-```text
-MANUAL                          AUTOMATED
-
-Status → Reading ────────────► Create Reading Session
-                               Create Started Log
-                               Set Active Reading Session
-                               Set Last Log
-                               Set Progress → 0%
-
-Progress → New % ────────────► Retrieve previous %
-                               Calculate progress delta
-                               Calculate minutes listened
-                               Create Reading Log
-                               Replace Last Log
-
-       [repeat progress updates while reading]
-
-Status → Read ───────────────► Calculate remaining minutes
-                               Create Finished Log
-                               Set Progress → 100%
-                               Clear active state
-
-             OR
-
-Status → Did Not Finish ─────► Create DNF Log
-                               Clear active state
-
-                                      ↓
-                              Reading Session + Logs
-                               remain as history
-```
-
-This design keeps the interaction with the system simple: I control **what I'm reading and how far I've progressed**, while the automations handle the activity records, calculations, relationships, and workflow state required behind the scenes.
+Updating progress

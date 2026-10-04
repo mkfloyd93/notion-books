@@ -61,7 +61,9 @@ Prompts are related back to their Reading Challenge and can be connected to Book
 
 This means the same Book records used throughout the rest of the system can also be used for challenge planning and completion tracking.
 
-<!-- SCREENSHOT: Reading Challenge with related Prompts -->
+<p align="center">
+  <img src="images/reading-challenge.png" width="500" alt="Reading Challenge page">
+</p>
 
 ---
 
@@ -87,7 +89,9 @@ A separate `Top Book Pick` relation identifies the book I currently prefer witho
 
 This lets me change my reading plans without having to restructure the challenge or lose the alternatives I had already identified.
 
-<!-- SCREENSHOT: Prompt with several candidate Books + Top Book Pick -->
+<p align="center">
+  <img src="images/prompt.png" width="500" alt="Prompt">
+</p>
 
 ---
 
@@ -210,7 +214,7 @@ Overall Completion
 
 A reading event at the Book level can ultimately update the progress of a Reading Challenge without requiring me to manually mark either the Prompt or the Challenge complete.
 
-<!-- SCREENSHOT: Challenge showing calculated completion -->
+![Challenge Progress](images/challenge-progress.png)
 
 ---
 

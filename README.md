@@ -4,27 +4,23 @@ A custom reading management and analytics system built with **Notion and Python*
 
 > This project combines a relational Notion workspace, native Notion automations, Python-based metadata enrichment, and custom dashboards into a single reading system.
 
-<p align="center">
-  <img src="docs/images/reading-dashboard.png" width="800" alt="Reading dashboard">
-</p>
-
 ## Overview
 
 I originally built this system because I wanted more control over my reading data than a traditional book-tracking app could provide.
 
 Over time, it evolved into a connected system for:
 
-- managing a large TBR
-- organizing books by priority, season, series, and other metadata
-- planning what to read without committing to one rigid planning method
-- tracking reading progress with minimal manual data entry
-- supporting rereads without duplicating book records
-- managing series and reading challenges
-- analyzing reading habits through custom dashboards
+- Managing a large TBR with structured book metadata
+- Planning what to read using flexible, customizable views
+- Tracking daily audiobook listening time
+- Automating reading activity and progress calculations
+- Supporting rereads without duplicating book records
+- Managing series and reading challenges
+- Analyzing reading habits through personalized dashboards
 
 The system is designed around a simple idea: **automate repetitive data work while keeping subjective decisions flexible and manual.**
 
-## 🔄 System at a Glance
+### How It Works
 
 The overall book lifecycle looks like this:
 
@@ -44,298 +40,204 @@ Track
 Analyze
 ```
 
-Books begin on my Goodreads Want to Read shelf, move through an enrichment workflow in Notion and Python, and eventually feed into planning, reading activity, and analytics.
+Books begin on my Goodreads Want to Read shelf, move through an enrichment workflow using Notion and Python, and eventually feed into planning, reading activity, and analytics.
 
 ---
 
-## 📖 Library & Metadata Management
+## ✨ Key Features
 
-<p align="center">
-  <img src="docs/images/library.png" width="800" alt="Notion Library page">
-</p>
+### Daily Listening Time & Automated Reading Logs
 
-The **Library** page acts as the administrative side of the system.
+I wanted a way to track how many minutes I spend listening to audiobooks each day, rather than only tracking completed books. To accomplish this, I introduced a **Reading Log** database to record individual reading events, progress percentages, and estimated listening time.
 
-I periodically batch-add books from my Goodreads Want to Read shelf using the Notion browser extension. New records initially contain the Goodreads URL but still require additional information.
+To avoid manually maintaining these records, I built four native Notion automations that respond to changes in a Book's **Status** and **Progress**.
 
-These books appear in a **Needs Info** view until the setup process is complete.
+When I update my progress, the system calculates the percentage completed since the previous update and uses the audiobook's total runtime to estimate minutes listened. It then creates a dated Reading Log, allowing me to track daily listening time and analyze my reading habits over time.
 
-### Book enrichment workflow
+Starting, finishing, or abandoning a book also triggers automations that manage Reading Sessions and preserve reading history.
 
-```text
-Goodreads Want to Read
-        ↓
-Notion Browser Extension
-        ↓
-Library → Needs Info
-        ↓
-Google Colab / Python
-        ↓
-Goodreads metadata enrichment
-        ↓
-Manual cover + reading season
-        ↓
-Status → To Read
-        ↓
-Ready for planning
-```
+[Explore the reading lifecycle and automations](docs/reading-lifecycle.md)
 
-A Python notebook running in Google Colab uses each Goodreads URL to retrieve and normalize metadata including:
+### Reread Support Without Duplicate Records
 
-- title
-- author
-- publication date
-- genres
-- audience
-- fiction/nonfiction classification
+A key design decision was separating **Books**, **Reading Sessions**, and **Reading Logs**.
 
-Authors are matched against the existing Authors database and automatically created when necessary.
-
-I manually handle information where automation would be less useful, such as choosing the best season to read a book and preparing the cover image used in my Notion interface.
-
-Changing the final status to **To Read** indicates that setup is complete and removes the book from the Needs Info workflow.
-
----
-
-## 🗂️ TBR & Flexible Reading Planning
-
-<p align="center">
-  <img src="docs/images/tbr.png" width="800" alt="Notion TBR page">
-</p>
-
-The TBR uses structured metadata to make a large collection of unread books easier to navigate.
-
-Books can be browsed using information such as genre, priority, season, and series. Priority levels help narrow the collection into groups ranging from books I want to read soon to books I may eventually reconsider.
-
-<p align="center">
-  <img src="docs/images/planning.png" width="800" alt="Notion Reading Planning page">
-</p>
-
-The **Planning** page is intentionally more flexible.
-
-My approach to choosing books changes frequently, so I designed the underlying data model to remain stable while allowing the planning interface to evolve.
-
-My current approach uses reading rotations. High-priority views provide pools of potential books, which I can drag into different reading cycles to plan what comes next.
-
-This separates **data management from planning methodology**: I can change how I plan without redesigning the underlying library.
-
----
-
-## 🎧 Automated Reading Tracking
-
-Once I choose a book, I manually enter its audiobook runtime and change its status from **To Read** to **Reading**.
-
-From there, most of the tracking is automated.
-
-Changing the status to Reading automatically:
-
-1. creates a new Reading Session
-2. creates a `Started` Reading Log at 0%
-3. links the active session to the book
-4. initializes the book's current progress state
-
-While reading, the main value I update manually is simply the book's **progress percentage**.
-
-The system uses the change in percentage and the audiobook's total runtime to estimate how many minutes were consumed:
-
-```text
-Change in Progress × Total Audiobook Runtime
-                  =
-        Estimated Minutes Listened
-```
-
-For example, moving from 30% to 42% represents approximately 12% of the audiobook's total runtime.
-
-Each progress update creates a dated Reading Log containing the new percentage and calculated listening time.
-
-When the book's status changes to **Read**, another automation records the remaining listening time, creates the final `Finished` log, sets progress to 100%, and clears the active reading state.
-
-This gives me detailed reading-history data without requiring me to manually start timers or record individual listening sessions.
-
----
-
-## 🔁 Reread Support
-
-Although I don't reread frequently, I wanted the data model to support it without requiring duplicate book records.
-
-Each time a book moves into Reading, the system creates a new **Reading Session**.
+Each Book has one canonical record containing its metadata. Every time I start reading that book, the system creates a new Reading Session, and individual reading events are recorded as Reading Logs associated with that session.
 
 ```text
 Book
+│
 ├── Reading Session #1
 │   ├── Started
 │   ├── Reached 25%
-│   ├── Reached 60%
 │   └── Finished
 │
 └── Reading Session #2
     ├── Started
     ├── Reached 40%
-    └── ...
+    └── Finished
 ```
 
-Reading Logs belong to their individual Reading Session, while both sessions remain connected to the same Book.
+This allows the system to preserve separate histories for multiple read-throughs without duplicating the book's metadata.
 
-This preserves separate reading histories while maintaining one canonical record for the book itself.
+### Automated Goodreads Metadata Enrichment
+
+Adding books to my library starts with a Goodreads URL rather than manually entering every property.
+
+A Python notebook running in Google Colab identifies books needing enrichment, retrieves their metadata from Goodreads using Selenium and BeautifulSoup, and normalizes the results for my Notion database.
+
+The workflow also checks the Authors database for existing records, creates missing authors when necessary, and updates the original Book through the Notion API.
+
+I still manually manage subjective information such as reading priority, preferred season, and cover presentation.
+
+[Explore the Goodreads integration](docs/goodreads-integration.md)
+
+### Date-Aware Reading Challenges
+
+Reading challenges use connected **Reading Challenges**, **Prompts**, and **Books** databases.
+
+Each Prompt can contain multiple candidate books and a preferred `Top Book Pick`. Rather than manually marking prompts complete, Notion formulas evaluate whether a related book was completed within the challenge's date range.
+
+The resulting Prompt statuses automatically contribute to the challenge's overall completion percentage.
+
+[Explore the reading challenge logic](docs/challenges.md)
 
 ---
 
-## 📚 Series Management
+## 🖥️ The Notion Workspace
+
+The Notion interface brings these workflows together through several pages designed for different aspects of reading management.
+
+### Reading Dashboard
+
+The main Reading page serves as the entry point to the system, bringing together the information and views I use to manage my reading.
 
 <p align="center">
-  <img src="docs/images/series.png" width="800" alt="Notion Series management page">
+  <img src="docs/images/reading-dashboard.png" width="800" alt="Notion Reading Dashboard">
 </p>
 
-The **Series** database provides another layer of organization on top of individual books.
+### Library
 
-It tracks information including:
+The Library serves as the administrative side of the system.
 
-- books belonging to each series
-- reading progress
-- publication status
-- upcoming books
-- author relationships
-- series type
-
-Series can also contain **parent and sub-series relationships**, allowing larger fictional universes or nested series to be represented without flattening them into unrelated records.
-
-Progress is calculated from the books connected to the series and distinguishes between a fully completed series, an ongoing series that is currently up to date, and a partially completed series.
-
-The Series area also includes a separate planning interface for my manhwa and webtoon backlog.
-
----
-
-## 🏆 Reading Challenges
-
-Reading challenges are modeled using two connected databases: **Reading Challenges** and **Prompts**.
-
-A challenge contains its active date range and related prompts. Individual prompts can then be connected to one or more possible books, including a preferred book when I already know what I would like to use.
-
-Prompt status is calculated automatically from the underlying reading data.
-
-Rather than simply marking a prompt complete manually, the system checks whether a connected book was actually completed **within the challenge's date range**.
-
-Prompts can therefore move automatically between states such as:
-
-- Not Started
-- In Progress
-- Completed
-- Not Completed
-
-Challenge completion percentage is then calculated from the statuses of its prompts.
-
----
-
-## 📊 Reading Analytics
+Newly captured books appear in a **Needs Info** view until their metadata has been enriched and I've completed any remaining manual setup. Once ready, books move into the main TBR workflow.
 
 <p align="center">
-  <img src="docs/images/stats.png" width="800" alt="Notion Reading Stats dashboard">
+  <img src="docs/images/library.png" width="800" alt="Notion Library">
 </p>
 
-Because reading activity is stored as structured data, the same system can also generate personalized analytics.
+### TBR
 
-The **Stats** dashboard currently includes views such as:
+The TBR provides ways to browse unread books by genre, priority, season, series, and other metadata.
 
-- books read
-- books not finished
-- minutes listened
-- books completed over time
-- fiction vs. nonfiction
-- audience
-- genres
-- authors
+<p align="center">
+  <img src="docs/images/tbr.png" width="800" alt="Notion TBR">
+</p>
 
-The dashboard is built from the same underlying data used for everyday reading management, allowing tracking and analysis to happen within one connected system.
+### Reading Planning
+
+The Planning page supports a more flexible approach to deciding what to read next.
+
+My current setup uses reading rotations, allowing me to organize potential books into reading cycles without changing the underlying database structure.
+
+<p align="center">
+  <img src="docs/images/planning.png" width="800" alt="Notion Reading Planning">
+</p>
+
+### Series Management
+
+The Series database tracks reading progress, publication status, upcoming books, and related authors.
+
+It also supports parent and sub-series relationships, allowing nested series to be represented while calculating progress across connected books.
+
+The Series area includes a separate planning interface for my manhwa and webtoon backlog.
+
+<p align="center">
+  <img src="docs/images/series.png" width="800" alt="Notion Series Management">
+</p>
+
+### Reading Analytics
+
+The Stats dashboard uses the same structured data collected throughout the system to display reading trends, including:
+
+- Books read and books not finished
+- Minutes listened
+- Books completed over time
+- Fiction vs. nonfiction
+- Audience and genre breakdowns
+- Authors
+
+Because these statistics are derived from the same databases used for everyday reading management, I don't need to maintain a separate analytics dataset.
+
+<p align="center">
+  <img src="docs/images/stats.png" width="800" alt="Notion Reading Statistics">
+</p>
 
 ---
 
-## 🤖 Python Automation
+## 🏗️ Technology & Architecture
 
-The current Python automation runs through a Google Colab notebook so it can be used without depending on a specific local computer.
+### Tech Stack
 
-The notebook:
+| Technology | Purpose |
+|---|---|
+| **Notion** | Relational databases, dashboards, formulas, views, and native automations |
+| **Python** | Metadata processing, normalization, and integration logic |
+| **Notion API** | Querying, creating, and updating database records |
+| **Selenium** | Browser automation for dynamically loaded Goodreads pages |
+| **BeautifulSoup** | HTML parsing and metadata extraction |
+| **Google Colab** | Cloud-based Python execution environment |
+| **Goodreads** | Source for my TBR and book metadata |
 
-1. identifies Notion book records that still need metadata
-2. validates the stored Goodreads URL
-3. loads the Goodreads page using Selenium
-4. parses metadata with BeautifulSoup
-5. normalizes selected Goodreads categories for my Notion schema
-6. checks whether each author already exists
-7. creates missing author records when necessary
-8. updates the existing book record through the Notion API
+### Data Architecture
 
-One example of normalization is consolidating Goodreads labels such as `Graphic Novels`, `Comics`, and `Graphic Novels Comics` into the single `graphic novel` genre used by my library.
-
-API credentials are stored using **Google Colab Secrets** rather than inside the notebook.
-
-➡️ See [`automation/populate_new_books.ipynb`](automation/populate_new_books.ipynb)
-
----
-
-## 🏗️ System Architecture
-
-The workspace is built around several connected Notion databases:
+The system is built around seven interconnected Notion databases:
 
 ```text
 Books
+│
 ├── Authors
 ├── Series
 ├── Reading Sessions
-│   └── Reading Logs
+│   └── Reading Log
 └── Prompts
     └── Reading Challenges
 ```
 
-**Books** acts as the central record for each title.
+**Books** acts as the central record for each title, connecting book metadata to reading history, series information, and challenge planning.
 
-**Authors** provides reusable author records rather than storing authors as plain text.
+The supporting databases have distinct responsibilities:
 
-**Series** organizes books into series and supports nested parent/sub-series relationships.
+- **Authors:** Reusable author records shared across Books.
+- **Series:** Book collections, publication tracking, and parent/sub-series relationships.
+- **Reading Sessions:** Individual read-throughs of a Book.
+- **Reading Log:** Historical reading events and estimated listening time.
+- **Reading Challenges:** Challenge information, date ranges, and overall completion.
+- **Prompts:** Individual challenge requirements connected to candidate Books.
 
-**Reading Sessions** represents an individual read-through of a book.
+The separation between permanent metadata, current reading state, and historical activity allows the system to support different workflows without duplicating records.
 
-**Reading Logs** stores reading events such as starting, reaching a new percentage, finishing, or abandoning a book.
-
-**Reading Challenges** stores challenge-level information and dates.
-
-**Prompts** connects challenge requirements to potential books and calculates completion from actual reading activity.
-
-For a deeper look at the database relationships, formulas, and automation design, see [`docs/architecture.md`](docs/architecture.md).
-
----
-
-## 🛠️ Tech Stack
-
-**Notion** — relational databases, dashboards, formulas, views, and workflow automations  
-**Python** — metadata processing and integration logic  
-**Notion API** — reading and updating database records  
-**Selenium** — browser automation for dynamically loaded Goodreads pages  
-**BeautifulSoup** — HTML parsing and metadata extraction  
-**Google Colab** — cloud-based execution environment  
-**Goodreads** — source for my TBR and book metadata
+For a detailed breakdown of the database relationships and schema, see the [System Architecture documentation](docs/architecture.md).
 
 ---
-
-## 💡 Design Principles
-
-A few principles have shaped the system as it has evolved:
-
-**Minimize repetitive input.** Progress percentage is enough to generate detailed listening data without manually logging time.
-
-**Automate objective data, not subjective decisions.** Metadata can be collected programmatically; priorities, seasonal fit, and reading plans remain under manual control.
-
-**Separate data from presentation.** The underlying databases remain stable even when I redesign dashboards or change how I plan my reading.
-
-**Preserve history.** Reading Sessions and Reading Logs maintain historical activity instead of overwriting previous reads.
-
-**Build for actual use.** The system has changed repeatedly as my reading habits have changed, rather than being designed around a fixed workflow that I have to follow.
-
 
 ## 📖 Technical Documentation
 
-For a deeper look at the system:
+The `docs` directory contains more detailed explanations of the system's design and implementation.
 
-- [System Architecture](docs/architecture.md) — Database structure and relationships
-- [Reading Activity & Automation](docs/reading-tracking.md) — Sessions, logs, progress tracking, rereads, and Notion automations
-- [Metadata Automation](docs/metadata-automation.md) — Goodreads scraping, metadata normalization, and Notion API integration
-- [Reading Challenges](docs/challenges.md) — Date-aware prompt and challenge tracking
+| Document | Description |
+|---|---|
+| [System Architecture](docs/architecture.md) | Database structure, relationships, design decisions, and ERD |
+| [Reading Lifecycle](docs/reading-lifecycle.md) | Reading Sessions, Reading Logs, progress calculations, rereads, and native Notion automations |
+| [Goodreads Integration](docs/goodreads-integration.md) | Python scraping, metadata normalization, author matching, and Notion API integration |
+| [Reading Challenges](docs/challenges.md) | Date-aware prompt completion and challenge progress |
+| [Notion Formulas](docs/formulas.md) | Formulas used for reading tracking, series progress, and challenges |
+| [Database Schema (DBML)](docs/notion-schema.dbml) | Technical representation of the seven connected databases |
+
+### Source Code
+
+The Python implementation for Goodreads metadata enrichment is available in:
+
+[`automation/populate_new_books.ipynb`](automation/populate_new_books.ipynb)
+
+The notebook is designed to run in Google Colab, with API credentials managed through Google Colab Secrets rather than stored in the repository.

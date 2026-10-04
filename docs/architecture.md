@@ -29,6 +29,18 @@ This structure allows the same underlying data to support multiple workflows and
 
 **Books** acts as the central record for each title, with the surrounding databases providing additional structure and historical data.
 
+### Detailed Database Schema
+
+For a more technical view, the complete entity relationship diagram (ERD)
+documents all seven databases, their properties, and relationship cardinalities.
+
+[**View the detailed ERD**](images/notion-database-erd.svg) | [View DBML source](notion-schema.dbml)
+
+The ERD represents the logical structure of the Notion system. Formula and
+rollup properties are documented using their resulting data types and
+descriptive notes, since DBML does not natively support Notion-specific
+property types.
+
 ---
 
 ## Core Databases
@@ -94,7 +106,7 @@ Each log stores the associated Book, Reading Session, date, percentage complete,
 
 Together, Reading Sessions and Reading Logs preserve reading history while the Book record maintains the current state.
 
-➡️ See [Reading Activity & Automation](reading-tracking.md) for the full tracking and automation workflow.
+➡️ See [Reading Activity & Automation](reading-lifecycle.md) for the full tracking and automation workflow.
 
 ### 🏆 Reading Challenges
 
@@ -134,7 +146,7 @@ Books + Authors
 
 This keeps repetitive external-data collection separate from the reading workflows managed inside Notion.
 
-➡️ See [Metadata Automation](metadata-automation.md) for the enrichment workflow and [`../automation/populate_new_books.ipynb`](../automation/populate_new_books.ipynb) for the implementation.
+➡️ See [Metadata Automation](goodreads-integration.md) for the enrichment workflow and [`../automation/populate_new_books.ipynb`](../automation/populate_new_books.ipynb) for the implementation.
 
 ---
 
@@ -150,7 +162,7 @@ Books maintain the current reading state, while Reading Sessions and Reading Log
 
 ### Derive rather than duplicate
 
-Relations, rollups, formulas, and automations derive information such as reading time, completion dates, series progress, and challenge progress from existing data wherever possible.
+Relations, rollups, formulas, and automations derive information such as reading time, completion dates, series progress, and challenge progress from existing data wherever possible. Calculated properties are documented in the database schema alongside their underlying data types, distinguishing formulas and rollups from manually maintained information.
 
 ### Keep workflows flexible
 

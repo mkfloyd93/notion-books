@@ -1,0 +1,229 @@
+
+Project NotionBooks {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Conceptual Notion database diagram.
+    Not an actual PostgreSQL schema.
+
+    All listed fields represent Notion properties.
+    References to Name are visual anchors only,
+    not actual foreign-key implementations.
+
+    Relations, rollups, and formulas are
+    identified in field notes.
+  '''
+}
+
+// ==========================================
+// BOOKS
+// ==========================================
+
+Table Books {
+  Name varchar [note: 'TITLE']
+
+  Status varchar [note: 'SELECT: To Read, Reading, Read, Did Not Finish']
+  Progress int [note: 'NUMBER: Percentage complete']
+
+  Priority varchar [note: 'SELECT: Up Next, Really Want to Read!!!, Definitely Interested, Someday, Meh - Don’t Remember']
+
+  Goodreads varchar [note: 'URL']
+
+  Author varchar [note: 'RELATION: Authors']
+  Series varchar [note: 'RELATION: Series']
+
+  "Number in Series" int [note: 'NUMBER']
+
+  Genre text [note: 'MULTI-SELECT']
+  Audience varchar [note: 'SELECT: Adult, Young Adult, Middle Grade, Children']
+  "Fic Type" varchar [note: 'SELECT: Fiction, Non-Fiction']
+
+  "Pub Date" date [note: 'DATE']
+
+  "Time (hours)" int [note: 'NUMBER']
+  "Time (minutes)" int [note: 'NUMBER']
+
+  "Time (total)" int [note: 'FORMULA: Total audiobook runtime in minutes']
+
+  "Reading Sessions" varchar [note: 'RELATION: Reading Sessions']
+  "Reading Log" varchar [note: 'RELATION: Reading Log']
+
+  "Active Reading Session" varchar [note: 'RELATION: Reading Sessions, current session']
+
+  "Last Log" varchar [note: 'RELATION: Reading Log, most recent event']
+
+  "Minutes Read" float [note: 'ROLLUP: Reading Log → Minutes Logged']
+
+  "Minutes Read label" varchar [note: 'FORMULA: Human-readable listening time']
+
+  Season text [note: 'MULTI-SELECT']
+
+  "Started Formula" date [note: 'FORMULA: Finds Started log date']
+
+  "Completed Formula" date [note: 'FORMULA: Finds Finished or Did Not Finish log date']
+}
+
+// ==========================================
+// AUTHORS
+// ==========================================
+
+Table Authors {
+  Name varchar [note: 'TITLE']
+
+  Books varchar [note: 'RELATION: Books']
+
+  Series text [note: 'ROLLUP: Books → Series']
+
+  Note: 'Other legacy properties not included because their definitions were not provided.'
+}
+
+// ==========================================
+// SERIES
+// ==========================================
+
+Table Series {
+  Name varchar [note: 'TITLE']
+
+  Status varchar [note: 'SELECT: Same options as Books']
+
+  "Sub Series Book Statuses" int [note: 'ROLLUP: Read book count from related Sub Series']
+  
+  "Current Series Book Count Formula" int [note: 'FORMULA: Counts books directly in this Series']
+  
+  "Sub Series Book Count" int [note: 'ROLLUP: Total book count from related Sub Series']
+
+  Type varchar [note: 'SELECT: Series, Graphic Novel Series, Standalone Series']
+
+  Goodreads varchar [note: 'URL']
+
+  Books varchar [note: 'RELATION: Books']
+
+  "Parent Series" varchar [note: 'RELATION: Series']
+  
+  "Sub Series" varchar [note: 'RELATION: Series']
+
+  "Fully Published" boolean [note: 'CHECKBOX']
+
+  "Next Book" date [note: 'DATE: Upcoming publication']
+
+  "Books Read" int [note: 'FORMULA: Counts read books, including sub-series']
+
+  "Total Books" int [note: 'FORMULA: Counts books, including sub-series']
+
+  "Status Text" varchar [note: 'FORMULA: Completion indicator or progress bar']
+
+  "Book Statuses" text [note: 'ROLLUP: Books → Status']
+
+  Author varchar [note: 'RELATION: Authors']
+}
+
+// ==========================================
+// READING SESSIONS
+// ==========================================
+
+Table Reading_Sessions {
+  Name varchar [note: 'TITLE: Book name + month/year']
+
+  Books varchar [note: 'RELATION: Books']
+
+  "Active Book" varchar [note: 'RELATION: Books, currently active']
+
+  Progress int [note: 'ROLLUP: Active Book → Progress']
+
+  "Reading Log" varchar [note: 'RELATION: Reading Log']
+}
+
+// ==========================================
+// READING LOG
+// ==========================================
+
+Table Reading_Log {
+  Name varchar [note: 'TITLE: Started, Reached X%, Finished, Did Not Finish']
+
+  Books varchar [note: 'RELATION: Books']
+
+  "Reading Session" varchar [note: 'RELATION: Reading Sessions']
+
+  "Percentage Complete" float [note: 'NUMBER']
+
+  "Minutes Logged" float [note: 'NUMBER: Calculated by Notion automation']
+
+  Date date [note: 'DATE']
+
+  "Time Total" float [note: 'ROLLUP: Books → Time (total)']
+
+  "Last Log Book" varchar [note: 'RELATION: Books']
+
+  "Prev Percentage Complete" float [note: 'ROLLUP: Last Log Book → Percentage Complete']
+}
+
+// ==========================================
+// READING CHALLENGES
+// ==========================================
+
+Table Reading_Challenges {
+  Name varchar [note: 'TITLE']
+
+  Description text [note: 'TEXT']
+
+  Created datetime [note: 'CREATED TIME']
+
+  Tags text [note: 'MULTI-SELECT']
+
+  Dates varchar [note: 'DATE RANGE: Start and end']
+
+  URL varchar [note: 'URL']
+
+  Prompts varchar [note: 'RELATION: Prompts']
+
+  Statuses text [note: 'ROLLUP: Prompts → Status']
+
+  Progress float [note: 'FORMULA: Completed prompts / total prompts * 100']
+}
+
+// ==========================================
+// PROMPTS
+// ==========================================
+
+Table Prompts {
+  Name varchar [note: 'TITLE']
+
+  Description text [note: 'TEXT']
+
+  "Reading Challenges" varchar [note: 'RELATION: Reading Challenges']
+
+  "Challenge Dates" varchar [note: 'ROLLUP: Reading Challenges → Dates']
+
+  Books varchar [note: 'RELATION: Books']
+
+  "Top Book Pick" varchar [note: 'RELATION: Books']
+
+  Status varchar [note: 'FORMULA: Date-aware challenge completion status']
+}
+
+// ==========================================
+// RELATIONSHIPS
+// ==========================================
+
+// Book metadata
+Ref: Books.Author <> Authors.Name
+Ref: Books.Series <> Series.Name
+
+// Series metadata and hierarchy
+Ref: Series.Author <> Authors.Name
+Ref: Series."Parent Series" <> Series.Name
+
+// Reading activity
+Ref: Reading_Sessions.Books <> Books.Name
+Ref: Reading_Sessions."Active Book" > Books.Name
+
+Ref: Reading_Log.Books <> Books.Name
+Ref: Reading_Log."Reading Session" > Reading_Sessions.Name
+
+// Temporary workflow references
+Ref: Books."Active Reading Session" > Reading_Sessions.Name
+Ref: Books."Last Log" > Reading_Log.Name
+
+// Challenges
+Ref: Prompts."Reading Challenges" > Reading_Challenges.Name
+Ref: Prompts.Books <> Books.Name
+Ref: Prompts."Top Book Pick" > Books.Name
